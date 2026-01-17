@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<title>Embedded System</title>
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500&display=swap');
+body{
+ font-family:'Sarabun',sans-serif;
+ background:#f5f7fa;
+ margin:0;padding:20px;
+ display:flex;justify-content:center;align-items:center;
+ min-height:100vh;color:#444
+}
+.container{
+ max-width:650px;width:100%;
+ background:#fff;padding:40px;border-radius:20px;
+ box-shadow:0 10px 25px rgba(0,0,0,.05)
+}
+h1{text-align:center;color:#576574;margin-bottom:20px}
+select,button{
+ width:100%;padding:14px;font-size:16px;
+ border-radius:12px;border:1px solid #ccc;margin-bottom:20px
+}
+.score{text-align:right;font-size:14px;color:#8395a7}
+.question{font-size:19px;margin-bottom:20px}
+.choice{
+ border:1.5px solid #eee;border-radius:12px;
+ padding:15px;margin:10px 0;cursor:pointer
+}
+.choice:hover{background:#f8fbff}
+.choice.correct{background:#ebfbee;border-color:#b7ebc6}
+.choice.wrong{background:#fff5f5;border-color:#feb2b2}
+.disabled{pointer-events:none;opacity:.6}
+button{background:#74b9ff;color:#fff;border:none}
+button:hover{background:#0984e3}
+</style>
+</head>
+
+<body>
+<div class="container">
+<h1>ข้อสอบEmbedded</h1>
+
+<select id="setSelect">
+ <option value="">-- เลือกบท --</option>
+ <option value="ch0">บทที่ 0 : ความรู้เบื้องต้นเกี่ยวกับระบบฝังตัว (Embedded System) </option>
+ <option value="ch2">บทที่ 2 : Real-time OS (RTOS)</option>
+ <option value="ch3">บทที่ 3 : Arduino Hardware & C</option>
+<option value="ch4">บทที่ 4 : I/O & Serial</option>
+
+</select>
+
+<div class="score" id="score"></div>
+<div class="question" id="question"></div>
+<div id="choices"></div>
+<button onclick="next()">ข้อถัดไป</button>
+</div>
+
+<script>
+// ================== คลังข้อสอบ แยกตามบท ==================
+const sets = {
+
+ch0: [
+{q:"ระบบฝังตัว (Embedded System) คืออะไร",c:["คอมพิวเตอร์ใช้งานทั่วไป","ระบบคอมพิวเตอร์ที่ทำงานเฉพาะด้าน","ระบบเครือข่าย","ซอฟต์แวร์สำนักงาน"],a:1},
+{q:"องค์ประกอบหลักของระบบฝังตัวมีกี่ส่วน",c:["1","2","3","4"],a:2},
+{q:"ข้อใดไม่ใช่องค์ประกอบของระบบฝังตัว",c:["Hardware","Application Software","RTOS","Database Server"],a:3},
+{q:"อุปกรณ์ใดทำหน้าที่ตรวจวัดสภาพแวดล้อม",c:["Actuator","Processor","Sensor","Memory"],a:2},
+{q:"อุปกรณ์ใดทำหน้าที่แปลง Digital เป็น Analog",c:["ADC","DAC","Sensor","Timer"],a:1},
+{q:"สถาปัตยกรรมใดแยกหน่วยความจำคำสั่งและข้อมูล",c:["Von Neumann","Harvard","CISC","RISC"],a:1},
+{q:"ระบบ Real-time แบบ Hard real-time ต้องมีคุณสมบัติใด",c:["ตอบสนองช้าได้","ตอบสนองตรงเวลาเสมอ","ไม่ต้องกำหนดเวลา","ใช้เฉพาะงานมัลติมีเดีย"],a:1},
+{q:"ไมโครคอนโทรลเลอร์แตกต่างจากไมโครโปรเซสเซอร์อย่างไร",c:["ไม่มี CPU","รวม CPU RAM ROM I/O ในชิปเดียว","ใช้พลังงานสูงกว่า","ต้องต่ออุปกรณ์ภายนอกเสมอ"],a:1},
+{q:"ข้อใดเป็นตัวอย่างของระบบฝังตัว",c:["Notebook","เครื่องซักผ้าอัตโนมัติ","Server","Desktop PC"],a:1},
+{q:"คุณสมบัติ Single-functioned หมายถึงอะไร",c:["ทำงานหลายอย่าง","ทำงานเฉพาะหน้าที่เดียว","ทำงานผ่านเครือข่าย","ทำงานแบบมัลติทาสก์"],a:1},
+
+{q:"สถาปัตยกรรม RISC มีลักษณะเด่นอย่างไร",c:["คำสั่งซับซ้อน","คำสั่งน้อยและเร็ว","ใช้พลังงานสูง","ต้องใช้หน่วยความจำมาก"],a:1},
+{q:"สถาปัตยกรรม CISC มีลักษณะใด",c:["คำสั่งน้อย","คำสั่งซับซ้อน","ใช้รอบนาฬิกาเดียวเสมอ","ไม่มี addressing mode"],a:1},
+{q:"ไมโครคอนโทรลเลอร์ตระกูลใดนิยมใช้กับ Arduino Uno",c:["PIC","ARM","AVR","RISC-V"],a:2},
+{q:"ESP32 ใช้สถาปัตยกรรมใด",c:["ARM","AVR","Xtensa","PIC"],a:2},
+{q:"ข้อใดเป็นจุดเด่นของ ARM",c:["ใช้พลังงานสูง","ประหยัดพลังงาน","คำสั่งซับซ้อน","ไม่มี RTOS"],a:1},
+{q:"RISC-V มีจุดเด่นสำคัญข้อใด",c:["ต้องเสียค่า License","เป็นมาตรฐานปิด","เป็น Open ISA","ใช้เฉพาะ Server"],a:2},
+{q:"บอร์ดใดเหมาะกับงาน IoT มากที่สุด",c:["Arduino Uno","ESP32","Micro:bit","KidBright"],a:1},
+{q:"หน่วยใดทำหน้าที่ประมวลผลหลักในระบบฝังตัว",c:["Sensor","Actuator","Processor","Power Supply"],a:2},
+{q:"Actuator ทำหน้าที่ใด",c:["วัดค่า","ประมวลผล","แสดงผล/กระตุ้นการทำงาน","เก็บข้อมูล"],a:2},
+{q:"ข้อใดเป็นลักษณะของระบบ Embedded",c:["ใช้พลังงานสูง","มีขนาดใหญ่","ตอบสนองแบบ Real-time","ต้องมีจอภาพ"],a:2}
+],
+ch2: [
+  // --- ส่วนที่ 1: ความรู้เรื่อง Real-time System (จากไฟล์ RTOS) ---
+  {q:"ระบบ Hard Real-time มีลักษณะเด่นอย่างไร",c:["อนุโลมให้ตอบสนองช้าได้บ้าง","ผลลัพธ์จะไร้ค่าหากไม่เป็นไปตามกรอบเวลา (Deadline)","ใช้กับงานดูหนังฟังเพลงทั่วไป","เน้นความเร็วสูงสุดโดยไม่สนความแม่นยำ"],a:1},
+  {q:"ระบบใดที่หากทำงานช้ากว่ากำหนด (Deadline) ผลลัพธ์จะยังมีค่าอยู่บ้างแต่ประสิทธิภาพลดลง",c:["Hard Real-time","Firm Real-time","Soft Real-time","Non Real-time"],a:2},
+  {q:"ปัจจัยที่สำคัญที่สุดของระบบ Real-time ในระบบฝังตัวคืออะไร",c:["ความสวยงามของ Interface","ราคาของอุปกรณ์","ความสามารถในการคาดการณ์เวลาได้ (Predictability)","ความจุของหน่วยความจำ"],a:2},
+  {q:"ข้อใดคือตัวอย่างของระบบ Hard Real-time",c:["ระบบสตรีมมิ่งวิดีโอ","ระบบถุงลมนิรภัยในรถยนต์","ระบบพยากรณ์อากาศ","ระบบจองตั๋วออนไลน์"],a:1},
+  {q:"RTOS ย่อมาจากคำว่าอะไร",c:["Real-Time Operating System","Ready-To-Operate Software","Remote-Task Operating System","Rapid-Time Open Source"],a:0},
+  {q:"หน้าที่หลักของ RTOS ในระบบฝังตัวคืออะไร",c:["จัดการเอกสารและตารางงาน","จัดการเวลาและลำดับความสำคัญของงาน (Task)","ตกแต่งรูปภาพ","เชื่อมต่อโซเชียลมีเดีย"],a:1},
+  {q:"การที่ระบบสามารถสลับการทำงานระหว่าง Task ได้รวดเร็วเรียกว่าอะไร",c:["Latency","Context Switching","Interrupt","Multitasking"],a:1},
+  {q:"ความหมายของ Deterministic ในระบบ RTOS คืออะไร",c:["ความสามารถในการสุ่มผลลัพธ์","ความแม่นยำในการกำหนดเวลาที่แน่นอนสำหรับการตอบสนอง","การทำงานแบบหลายคนพร้อมกัน","การทำงานผ่านเครือข่ายไร้สาย"],a:1},
+  {q:"อะไรคือสาเหตุที่ทำให้ระบบฝังตัวต้องมีคุณสมบัติ Real-time",c:["เพื่อให้ประมวลผลกราฟิกได้ดี","เพื่อความปลอดภัยและประสิทธิภาพในการควบคุมฮาร์ดแวร์","เพื่อให้ใช้งานอินเทอร์เน็ตได้เร็ว","เพื่อให้ประหยัดราคาต้นทุน"],a:1},
+  {q:"ระบบ Firm Real-time แตกต่างจาก Soft Real-time อย่างไร",c:["Firm ยอมให้มี Error ได้มากกว่า","Firm ไม่ยอมรับข้อมูลที่มาช้ากว่ากำหนด (Discard)","Soft มีราคาแพงกว่า","ไม่มีความแตกต่างกัน"],a:1},
+
+  // --- ส่วนที่ 2: การจัดการพลังงานและ Low-Power (จากไฟล์ RTOS) ---
+  {q:"ในระบบ IoT อุปกรณ์ที่ใช้พลังงานน้อย (Low-Power) สำคัญอย่างไร",c:["ทำให้เครื่องร้อนเร็วขึ้น","ช่วยยืดอายุการใช้งานแบตเตอรี่","เพิ่มความเร็วของ CPU","ทำให้รับสัญญาณ WiFi ได้ดีขึ้น"],a:1},
+  {q:"โหมดใดของไมโครคอนโทรลเลอร์ที่กินไฟน้อยที่สุด",c:["Idle Mode","Run Mode","Deep Sleep Mode","Standby Mode"],a:2},
+  {q:"คำสั่ง esp_deep_sleep_start() ใน ESP32 ส่งผลอย่างไร",c:["รีสตาร์ทเครื่องทันที","เข้าสู่โหมดหลับลึกเพื่อประหยัดพลังงาน","ปิดการทำงานของ WiFi เท่านั้น","ลบโปรแกรมทั้งหมด"],a:1},
+  {q:"การใช้งาน Deep Sleep มักใช้ควบคู่กับอุปกรณ์ประเภทใด",c:["เซนเซอร์ที่ส่งข้อมูลเป็นระยะ","เซิร์ฟเวอร์ขนาดใหญ่","เครื่องคอมพิวเตอร์ตั้งโต๊ะ","หลอดไฟที่ต้องสว่างตลอดเวลา"],a:0},
+  {q:"ในโหมด Deep Sleep ของ ESP32 ส่วนประกอบใดที่ยังทำงานอยู่เพื่อปลุกระบบ",c:["Main CPU","RTC Timer / External Wakeup","WiFi Module","Bluetooth Module"],a:1},
+
+  // --- ส่วนที่ 3: โครงสร้างและการโปรแกรม (เพิ่มเติม) ---
+  {q:"คำสั่ง #define มีวัตถุประสงค์เพื่ออะไร",c:["ใช้รวมไลบรารี","ใช้กำหนดชื่อค่าคงที่แทนตัวเลข","ใช้สร้างฟังก์ชันใหม่","ใช้จองพื้นที่หน่วยความจำ"],a:1},
+  {q:"ชนิดข้อมูล float ในภาษา C สำหรับ Arduino ใช้พื้นที่กี่ไบต์",c:["1 ไบต์","2 ไบต์","4 ไบต์","8 ไบต์"],a:2},
+  {q:"หากต้องการเปลี่ยนชนิดข้อมูลจาก int เป็น float เรียกว่าอะไร",c:["Casting","Loading","Shifting","Mapping"],a:0},
+  {q:"สถาปัตยกรรมแบบใดที่ใช้แยกหน่วยความจำโปรแกรมและหน่วยความจำข้อมูลออกจากกัน",c:["Von Neumann","Harvard","CISC","RISC"],a:1},
+  {q:"บอร์ด Arduino Uno R3 มีหน่วยความจำ Flash ขนาดเท่าใด",c:["8 KB","16 KB","32 KB","64 KB"],a:2},
+
+  // --- ส่วนที่ 4: การจัดการ I/O และ Protocol ---
+  {q:"การอ่านค่า Analog จากบอร์ด Arduino Uno จะได้ความละเอียดกี่ระดับ",c:["256 ระดับ","512 ระดับ","1024 ระดับ","2048 ระดับ"],a:2},
+  {q:"ถ้าต้องการใช้ขา Digital เป็นขา Analog Output (PWM) ต้องใช้คำสั่งใด",c:["digitalWrite()","analogRead()","analogWrite()","pinMode()"],a:2},
+  {q:"ขา SDA และ SCL บนบอร์ด Arduino ใช้สำหรับการสื่อสารแบบใด",c:["UART","SPI","I2C","USB"],a:2},
+  {q:"มาตรฐานการสื่อสาร I2C สามารถเชื่อมต่ออุปกรณ์ได้กี่ตัว (โดยประมาณ)",c:["1 ตัว","2 ตัว","มากกว่า 100 ตัว","ไม่จำกัด"],a:2},
+  {q:"ในบอร์ด Arduino Uno ขา A4 และ A5 ทำหน้าที่เป็นขาอะไรเพิ่มเติม",c:["TX/RX","PWM","SDA/SCL","SPI"],a:2},
+  {q:"Baud Rate ในการสื่อสาร Serial หมายถึงอะไร",c:["ความเร็วในการประมวลผล","ความเร็วในการส่งข้อมูล (บิตต่อวินาที)","แรงดันไฟฟ้าที่ใช้","ขนาดของหน่วยความจำ"],a:1},
+  {q:"ฟังก์ชัน millis() ใน Arduino ให้ค่าอะไรออกมา",c:["เวลาปัจจุบันเป็นชั่วโมง","เวลาที่บอร์ดเริ่มทำงานหน่วยเป็นมิลลิวินาที","จำนวนรอบการทำงานของ loop","ความเร็วของพัดลม"],a:1},
+  {q:"การใช้งานอินเทอร์รัพท์ (Interrupt) มีข้อดีอย่างไร",c:["ทำให้โปรแกรมทำงานช้าลง","ช่วยให้ตอบสนองต่อเหตุการณ์ฉุกเฉินได้ทันทีโดยไม่ต้องรอ loop","ช่วยเพิ่มแรงดันไฟฟ้า","ใช้แทนหน่วยความจำ RAM"],a:1},
+  {q:"ขา Interrupt ภายนอกของ Arduino Uno คือขาใด",c:["0 และ 1","2 และ 3","10 และ 11","A0 และ A1"],a:1},
+  {q:"ข้อผิดพลาด 'Expected ; before }' หมายถึงอะไร",c:["ลืมใส่เครื่องหมายอัฒภาค (;) ก่อนจบประโยค","ชื่อตัวแปรซ้ำกัน","ลืมต่อสาย USB","บอร์ดเสีย"],a:0}
+],
+ch3: [
+// ===== Hardware & Board =====
+{q:"แหล่งจ่ายไฟภายนอกผ่าน Barrel Jack ของ Arduino Uno ควรมีแรงดันอยู่ในช่วงใด",c:["3-5V","5-7V","7-12V","12-24V"],a:2},
+{q:"Voltage Regulator บนบอร์ด Arduino ทำหน้าที่อะไร",c:["แปลงสัญญาณ Analog เป็น Digital","ควบคุมและรักษาระดับแรงดันไฟเลี้ยงบอร์ดให้คงที่","กำเนิดสัญญาณนาฬิกา","เพิ่มความเร็วในการประมวลผล"],a:1},
+{q:"Crystal Oscillator บนบอร์ด Arduino Uno R3 มีความถี่เท่าใด",c:["8 MHz","12 MHz","16 MHz","20 MHz"],a:2},
+{q:"ขา Vin ของ Arduino ใช้ทำอะไร",c:["ต่อไฟจาก USB","ต่อแหล่งพลังงานภายนอก","ต่อแรงดันอ้างอิง ADC","ต่อกราวด์"],a:1},
+{q:"กระแสสูงสุดที่ขา I/O ของ ATmega328 ไม่ควรเกินเท่าใด",c:["10 mA","20 mA","40 mA","100 mA"],a:2},
+{q:"พอร์ต ICSP ใช้ทำอะไร",c:["ต่อ WiFi","โปรแกรม Bootloader","ขยายหน่วยความจำ","ต่อจอ"],a:1},
+{q:"Arduino รุ่นใดมีขนาดเล็กและใช้สาย Mini-B",c:["Uno","Mega","Nano","Leonardo"],a:2},
+{q:"สาย USB มาตรฐานของ Arduino Uno คือแบบใด",c:["Type-A to Type-B","Type-A to Micro-B","Type-C","Mini-USB"],a:0},
+{q:"ความหมายของ Open Hardware คืออะไร",c:["ซอฟต์แวร์ฟรี","เปิดเผยพิมพ์เขียวฮาร์ดแวร์","ไม่ต้องใช้เคส","ใช้ได้เฉพาะ Linux"],a:1},
+{q:"Arduino Leonardo แตกต่างจาก Uno อย่างไร",c:["ไม่มี Analog","ใช้ Native USB","ไม่มี PWM","ไม่มี UART"],a:1},
+
+// ===== Arduino C =====
+{q:"Sketch ใน Arduino หมายถึงอะไร",c:["ภาพวงจร","โปรแกรม Arduino","ขั้นตอนออกแบบ","Simulation"],a:1},
+{q:"ชนิดข้อมูล char ใช้หน่วยความจำกี่ไบต์",c:["1","2","4","8"],a:0},
+{q:"int x = 10 % 3; ค่า x เท่ากับเท่าใด",c:["0","1","3","3.33"],a:1},
+{q:"Global Variable ต้องประกาศที่ใด",c:["ใน setup()","ใน loop()","นอกทุกฟังก์ชัน","ใน if"],a:2},
+{q:"ตัวดำเนินการ == ใช้ทำอะไร",c:["กำหนดค่า","เปรียบเทียบ","เพิ่มค่า","Comment"],a:1},
+{q:"คำสั่งใดใช้รวม Library",c:["#define","#include","#import","#using"],a:1},
+{q:"ฟังก์ชัน loop() ทำงานอย่างไร",c:["ครั้งเดียว","เมื่อ reset","วนซ้ำตลอด","เฉพาะ interrupt"],a:2},
+{q:"ชนิดข้อมูลใดใช้เก็บค่าทศนิยม",c:["int","long","float","byte"],a:2},
+{q:"int a[10] เก็บข้อมูลได้กี่ค่า",c:["9","10","11","ไม่จำกัด"],a:1},
+{q:"Comment แบบบรรทัดเดียวใช้สัญลักษณ์ใด",c:["/* */","//","##","--"],a:1}
+],
+ch4: [
+// ===== Digital / Analog I/O =====
+{q:"ขา INPUT ของ Arduino มีลักษณะใด",c:["Low Impedance","High Impedance","จ่ายกระแสสูง","รับแรงดันสูง"],a:1},
+{q:"INPUT_PULLUP เมื่อไม่กดสวิตช์ มีค่าเป็นอะไร",c:["LOW","HIGH","FLOAT","Analog"],a:1},
+{q:"ค่า HIGH ของ Arduino Uno ประมาณเท่าใด",c:["1.8V","3.3V","5V","12V"],a:2},
+{q:"digitalWrite() ใช้ทำอะไร",c:["อ่านค่า","เขียน HIGH/LOW","อ่าน Analog","เขียน PWM"],a:1},
+{q:"digitalRead() ใช้ทำอะไร",c:["อ่าน Digital","อ่าน Analog","เขียนค่า","ตั้งโหมด"],a:0},
+
+// ===== PWM / ADC =====
+{q:"ความถี่ PWM ที่ขา 5 และ 6 ของ Uno คือเท่าใด",c:["490 Hz","980 Hz","1 kHz","16 MHz"],a:1},
+{q:"analogWrite(9,64) ให้ Duty Cycle ประมาณเท่าใด",c:["25%","50%","75%","100%"],a:0},
+{q:"analogRead() มีความละเอียดกี่บิต",c:["8","10","12","16"],a:1},
+{q:"คำสั่งใดใช้ตั้งแรงดันอ้างอิง ADC ภายใน 1.1V",c:["DEFAULT","INTERNAL","EXTERNAL","AREF"],a:1},
+
+// ===== Serial Communication =====
+{q:"การสื่อสารแบบ Serial ส่งข้อมูลอย่างไร",c:["หลายบิต","ทีละบิต","หลายสาย","มี Clock"],a:1},
+{q:"Serial.begin(9600) หมายถึงอะไร",c:["แรงดัน","ความถี่","Baud rate","Delay"],a:2},
+{q:"Serial.print() ใช้ทำอะไร",c:["รับข้อมูล","ส่งข้อมูล","ตั้งค่า","แปลงข้อมูล"],a:1},
+{q:"Serial RX และ TX อยู่ที่ขาใด",c:["0 และ 1","2 และ 3","A4 และ A5","10 และ 11"],a:0},
+{q:"UART ใช้สายหลักกี่เส้น",c:["1","2","3","4"],a:1},
+{q:"I2C ใช้สายใด",c:["RX/TX","MOSI/MISO","SDA/SCL","CLK/DATA"],a:2},
+{q:"SPI ใช้สายหลักกี่เส้น",c:["2","3","4","5"],a:2},
+{q:"Error stk500_recv มักเกิดจากอะไร",c:["โค้ดผิด","ลืม ;","เลือกพอร์ตผิด","RAM เต็ม"],a:2},
+{q:"ฟังก์ชันใดตรวจสอบข้อมูลจาก Serial",c:["Serial.begin","Serial.print","Serial.available","Serial.read"],a:2}
+]
+}
+
+// ================== ระบบ Quiz ==================
+let quiz=[],index=0,score=0,answered=false;
+
+document.getElementById("setSelect").onchange=e=>{
+ if(!e.target.value)return;
+ quiz=[...sets[e.target.value]].sort(()=>Math.random()-0.5);
+ index=0;score=0;
+ document.getElementById("score").innerText="คะแนน: 0";
+ loadQ();
+};
+
+function loadQ(){
+ answered=false;
+ document.getElementById("question").innerText=`ข้อ ${index+1}: ${quiz[index].q}`;
+ const c=document.getElementById("choices");
+ c.innerHTML="";
+ quiz[index].c.forEach((x,i)=>{
+  let d=document.createElement("div");
+  d.className="choice";
+  d.innerText=x;
+  d.onclick=()=>check(d,i);
+  c.appendChild(d);
+ });
+}
+
+function check(el,i){
+ if(answered)return;
+ answered=true;
+ document.querySelectorAll(".choice").forEach((c,idx)=>{
+  c.classList.add("disabled");
+  if(idx===quiz[index].a)c.classList.add("correct");
+  if(idx===i && i!==quiz[index].a)c.classList.add("wrong");
+ });
+ if(i===quiz[index].a){
+  score++;
+  document.getElementById("score").innerText=`คะแนน: ${score}`;
+ }
+}
+
+function next(){
+ if(!answered){alert("กรุณาเลือกคำตอบก่อน");return;}
+ index++;
+ if(index<quiz.length) loadQ();
+ else document.body.innerHTML=
+ `<div class="container">
+   <h1>จบแบบทดสอบ</h1>
+   <h2>คะแนน ${score}/${quiz.length}</h2>
+  </div>`;
+}
+</script>
+</body>
+</html>
